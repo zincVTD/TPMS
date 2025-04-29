@@ -17,14 +17,18 @@
 
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
 
-static uint32_t timeOut = 10;
+#define TIMEOUT 10
 
-#define CHECK_TIMEOUT					\
-				if (--timeOut == 0) {	\
-					timeOut = 10;		\
-					break;							\
-				}
-
+uint8_t I2C_WaitEvent(I2C_TypeDef* I2C, uint32_t event) {
+	uint32_t startTime = TIM_GetCounter(TIM2);
+	while (!I2C_CheckEvent(I2C, event)) {
+		if ((TIM_GetCounter(TIM2) - startTime) >= TIMEOUT) {
+			return 0;
+		}
+	}
+	return 1;
+}
+				
 static void SSD1306_I2C_WriteMulti(SSD1306_Name* SSD1306, uint8_t address, uint8_t reg, uint8_t* data, uint16_t count) 
 {
 	uint8_t TxBuff[256];
@@ -34,19 +38,19 @@ static void SSD1306_I2C_WriteMulti(SSD1306_Name* SSD1306, uint8_t address, uint8
 	}
 
 	I2C_GenerateSTART(SSD1306->I2C, ENABLE);
-	while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_MODE_SELECT)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_MODE_SELECT)) {
+    return;
 	}
 
 	I2C_Send7bitAddress(SSD1306->I2C, address, I2C_Direction_Transmitter);
-	while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
+    return;
 	}
 
 	for (int i = 0; i < count + 1; i++) {
 		I2C_SendData(SSD1306->I2C, TxBuff[i]);
-		while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED)){
-//			CHECK_TIMEOUT
+		if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
+			return;
 		}
 	}
 
@@ -60,19 +64,19 @@ static void SSD1306_I2C_Write(SSD1306_Name* SSD1306, uint8_t address, uint8_t re
 	TxBuff[1] = data;
 
 	I2C_GenerateSTART(SSD1306->I2C, ENABLE);
-	while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_MODE_SELECT)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_MODE_SELECT)) {
+    return;
 	}
 
 	I2C_Send7bitAddress(SSD1306->I2C, address, I2C_Direction_Transmitter);
-	while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
+    return;
 	}
 
 	for (int i = 0; i < 2; i++) {
 		I2C_SendData(SSD1306->I2C, TxBuff[i]);
-		while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED)){
-//			CHECK_TIMEOUT
+		if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
+			return;
 		}
 	}
 
@@ -98,19 +102,19 @@ uint8_t SSD1306_Init(SSD1306_Name* SSD1306, I2C_TypeDef* I2C) {
 	uint8_t test_data = 0x00;
 	I2C_GenerateSTART(SSD1306->I2C, ENABLE);
 
-	while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_MODE_SELECT)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_MODE_SELECT)) {
+    return 0;
 	}
 
 	I2C_Send7bitAddress(SSD1306->I2C, SSD1306_I2C_ADDR, I2C_Direction_Transmitter);
 
-	while(!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
+    return 0;
 	}
 	I2C_SendData(SSD1306->I2C, test_data);
 
-	while (!I2C_CheckEvent(SSD1306->I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED)){
-//		CHECK_TIMEOUT
+	if (!I2C_WaitEvent(SSD1306->I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
+    return 0;
 	}
 
 	I2C_GenerateSTOP(SSD1306->I2C, ENABLE);

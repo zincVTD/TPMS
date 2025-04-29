@@ -9,6 +9,12 @@
 uint8_t sensorData[6] = {0};
 uint8_t CANTransmitData[8] = {0};
 
+/**
+  * @brief  Converts sensor data array into TPMS CAN frame format.
+  * @param  sensorData: Pointer to the array containing sensor raw data.
+  * @param  TPMSData: Pointer to the array to store formatted TPMS data.
+  * @retval None
+  */
 void ConvertSensorDataToTPMSData(uint8_t* sensorData, uint8_t* TPMSData) {
 	uint8_t count = 0;
 	for (int i = 0; i < 8; i++) {
@@ -45,7 +51,6 @@ void ConvertSensorDataToTPMSData(uint8_t* sensorData, uint8_t* TPMSData) {
 	}
 
 	TPMSData[5] = sensorData[4];
-//	TPMSData[6] = sensorData[5];
 	TPMSData[6] = 0x00;
 
 	for (int i = 0; i < 4; i++) {
@@ -60,11 +65,21 @@ void ConvertSensorDataToTPMSData(uint8_t* sensorData, uint8_t* TPMSData) {
 	}
 }
 
+/**
+  * @brief  Configures clocks for GPIO, SPI1, and CAN1 peripherals.
+  * @param  None
+  * @retval None
+  */
 void RCC_Config(){
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_SPI1, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 }
 
+/**
+  * @brief  Configures GPIO pins for SPI1 and CAN1.
+  * @param  None
+  * @retval None
+  */
 void GPIO_Config(){
 	GPIO_InitTypeDef GPIO_InitStruct;
 	
@@ -84,6 +99,11 @@ void GPIO_Config(){
 	GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
+/**
+  * @brief  Configures CAN1 peripheral in Normal mode.
+  * @param  None
+  * @retval None
+  */
 void CAN_Config(){
 	CAN_InitTypeDef CAN_InitStructure;
 
@@ -103,6 +123,11 @@ void CAN_Config(){
 	while(CAN_Init(CAN1, &CAN_InitStructure) == CAN_InitStatus_Failed);
 }
 
+/**
+  * @brief  Configures SPI1 peripheral in Slave mode with interrupt.
+  * @param  None
+  * @retval None
+  */
 void SPI_Config(){
 	SPI_InitTypeDef SPI_InitStruct;
 	
@@ -130,6 +155,12 @@ void SPI_Config(){
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+/**
+  * @brief  Transmits data over CAN1.
+  * @param  data: Pointer to the array containing data to transmit.
+  * @param  length: Number of bytes to transmit.
+  * @retval None
+  */
 void CAN_TransmitData(uint8_t* data, uint8_t length){
 	CanTxMsg TxMessage;
 
@@ -146,6 +177,11 @@ void CAN_TransmitData(uint8_t* data, uint8_t length){
 	while (CAN_TransmitStatus(CAN1, mailbox) != CAN_TxStatus_Ok);
 }
 
+/**
+  * @brief  Interrupt handler for SPI1 receive buffer.
+  * @param  None
+  * @retval None
+  */
 void SPI1_IRQHandler(void){
 	if(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == SET){
 		static int i = 0;

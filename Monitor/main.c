@@ -9,6 +9,12 @@ uint8_t TPMSData[8] = {0};
 uint8_t pressureData[4] = {0};
 uint8_t batteryData[4] = {0};
 
+/**
+  * @brief  Converts an integer to a null-terminated string.
+  * @param  value: Integer value to convert.
+  * @param  str: Pointer to buffer to store the result string.
+  * @retval None
+  */
 void intToStr(int value, char* str) {
 	char temp[12];
 	int i = 0, j = 0;
@@ -26,11 +32,21 @@ void intToStr(int value, char* str) {
 	str[j] = '\0';
 }
 
+/**
+  * @brief  Enables clock for GPIO, CAN1, and I2C1 peripherals.
+  * @param  None
+  * @retval None
+  */
 void RCC_Config(){
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1 | RCC_APB1Periph_I2C1, ENABLE);
 }
 
+/**
+  * @brief  Configures GPIO pins for I2C and CAN interfaces.
+  * @param  None
+  * @retval None
+  */
 void GPIO_Config(){
 	GPIO_InitTypeDef GPIO_InitStruct;
 	
@@ -54,6 +70,12 @@ void GPIO_Config(){
 	GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
+/**
+  * @brief  Initializes the OLED display via I2C.
+  * @param  mySSD1306: Pointer to SSD1306 display structure.
+  * @param  I2C: Pointer to the I2C peripheral used.
+  * @retval 1 if successful, 0 otherwise.
+  */
 uint8_t OLED_Config(SSD1306_Name* mySSD1306, I2C_TypeDef* I2C) {
 	I2C_InitTypeDef I2C_InitStructure;
 
@@ -70,6 +92,11 @@ uint8_t OLED_Config(SSD1306_Name* mySSD1306, I2C_TypeDef* I2C) {
 	return SSD1306_Init(mySSD1306, I2C);
 }
 
+/**
+  * @brief  Configures the CAN1 peripheral in Normal mode.
+  * @param  None
+  * @retval None
+  */
 void CAN_Config(){
 	CAN_InitTypeDef CAN_InitStructure;
 
@@ -99,6 +126,11 @@ void CAN_Config(){
 	while(CAN_Init(CAN1, &CAN_InitStructure) == CAN_InitStatus_Failed);
 }
 
+/**
+  * @brief  Configures CAN filter to accept TPMS data frames.
+  * @param  None
+  * @retval None
+  */
 void CAN_FilterConfig() {
 	CAN_FilterInitTypeDef CAN_FilterInitStructure;
 
@@ -115,6 +147,12 @@ void CAN_FilterConfig() {
 	CAN_FilterInit(&CAN_FilterInitStructure);
 }
 
+/**
+  * @brief  Receives a CAN data frame if ID matches.
+  * @param  id: Expected CAN standard identifier.
+  * @param  data: Pointer to buffer to store received data.
+  * @retval None
+  */
 void CAN_ReceiveData(uint32_t id, uint8_t* data) {
 	CanRxMsg RxMessage;
 	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);
@@ -126,6 +164,11 @@ void CAN_ReceiveData(uint32_t id, uint8_t* data) {
 	}
 }
 
+/**
+  * @brief  CAN1 RX0 interrupt handler for receiving TPMS data.
+  * @param  None
+  * @retval None
+  */
 void USB_LP_CAN1_RX0_IRQHandler(){
 	if(CAN_GetITStatus(CAN1, CAN_IT_FMP0)){
 		CAN_ReceiveData(TPMS_DATA_ID, TPMSData);
@@ -140,6 +183,13 @@ void USB_LP_CAN1_RX0_IRQHandler(){
 	}
 }
 
+/**
+  * @brief  Displays TPMS pressure and battery levels on OLED.
+  * @param  SSD1306: Pointer to SSD1306 display structure.
+  * @param  pressures: Array of 4 tire pressure values (in PSI).
+  * @param  batteryLevels: Array of 4 battery levels (4-bit values).
+  * @retval None
+  */
 void OLED_DisplayTPMS(SSD1306_Name* SSD1306, uint8_t pressures[4], uint8_t batteryLevels[4]) {
 	// Clear the display
 	SSD1306_Clear(SSD1306);
